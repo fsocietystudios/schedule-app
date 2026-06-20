@@ -14,7 +14,7 @@ import { generateId } from '@/utils/id';
 import { spacing } from '@/theme';
 import { AbsenceType, RequestType, ShiftSlot } from '@/types';
 import { daysInMonthKey, formatDateShort } from '@/utils/calendar';
-import { SLOT_LABELS } from '@/utils/shift';
+import { shiftHasMember, SLOT_LABELS } from '@/utils/shift';
 
 const TYPE_OPTIONS: { value: RequestType; label: string }[] = [
   { value: 'absence', label: '🌴 היעדרות' },
@@ -32,7 +32,6 @@ export default function NewRequestScreen() {
   const team = useAppStore((s) => s.team);
   const exemptions = useAppStore((s) => s.exemptions);
   const history = useAppStore((s) => s.history);
-  const minCoveragePerShift = useAppStore((s) => s.settings.minCoveragePerShift);
   const schedules = useAppStore((s) => s.schedules);
   const addRequest = useAppStore((s) => s.addRequest);
   const updateRequest = useAppStore((s) => s.updateRequest);
@@ -67,17 +66,19 @@ export default function NewRequestScreen() {
   const ownShiftOptions = useMemo(() => {
     if (!activeSchedule || !memberId) return [];
     return activeSchedule.shifts
-      .filter((s) => s.memberIds.includes(memberId))
+      .filter((s) => shiftHasMember(s, memberId))
       .map((s) => ({
         value: `${s.date}_${s.slot}`,
         label: `${formatDateShort(s.date)} · ${SLOT_LABELS[s.slot]}`,
       }));
   }, [activeSchedule, memberId]);
 
-  const partnerOptions = useMemo(
-    () => team.filter((m) => m.id !== memberId).map((m) => ({ value: m.id, label: m.name })),
-    [team, memberId]
-  );
+  const partnerOptions = useMemo(() => {
+    const myRole = team.find((m) => m.id === memberId)?.role;
+    return team
+      .filter((m) => m.id !== memberId && m.role === myRole)
+      .map((m) => ({ value: m.id, label: m.name }));
+  }, [team, memberId]);
 
   const canSubmit =
     !!activeSchedule &&
@@ -110,7 +111,6 @@ export default function NewRequestScreen() {
         team,
         exemptions,
         history,
-        minCoveragePerShift,
       });
       updateRequest(request.id, { aiFeedback: feedback });
       router.replace({ pathname: '/requests/[id]/feedback', params: { id: request.id } });

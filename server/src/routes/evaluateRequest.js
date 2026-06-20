@@ -3,9 +3,9 @@ import { ollamaJson } from '../ollamaClient.js';
 import { formatDateShort } from '../shiftUtils.js';
 
 export async function evaluateRequestHandler(req, res) {
-  const { request, schedule, team, exemptions, minCoveragePerShift } = req.body;
+  const { request, schedule, team, exemptions } = req.body;
   const touchedShifts = getTouchedShifts(request, schedule);
-  const impacts = buildImpacts(touchedShifts, minCoveragePerShift);
+  const impacts = buildImpacts(touchedShifts, request.memberId);
   const understaffed = impacts.filter((i) => !i.ok);
 
   if (touchedShifts.length === 0) {
@@ -20,9 +20,15 @@ export async function evaluateRequestHandler(req, res) {
   }
 
   const candidate = understaffed.length
-    ? findBackfillCandidate(team, exemptions, schedule.shifts, understaffed[0].date, understaffed[0].slot, [
-        request.memberId,
-      ])
+    ? findBackfillCandidate(
+        team,
+        exemptions,
+        schedule.shifts,
+        understaffed[0].date,
+        understaffed[0].slot,
+        understaffed[0].role,
+        [request.memberId]
+      )
     : null;
 
   let fallbackSuggestion;

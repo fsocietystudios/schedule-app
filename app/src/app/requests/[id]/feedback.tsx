@@ -10,7 +10,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { getAiEngine } from '@/ai';
 import { colors, radius, spacing } from '@/theme';
 import { formatDateShort } from '@/utils/calendar';
-import { SLOT_LABELS } from '@/utils/shift';
+import { ASSIGNMENT_ROLE_LABELS, SLOT_LABELS } from '@/utils/shift';
 import { AbsenceType, RequestStatus } from '@/types';
 
 const ABSENCE_TYPE_LABELS: Record<AbsenceType, string> = {
@@ -32,7 +32,6 @@ export default function RequestFeedbackScreen() {
   const team = useAppStore((s) => s.team);
   const exemptions = useAppStore((s) => s.exemptions);
   const history = useAppStore((s) => s.history);
-  const minCoveragePerShift = useAppStore((s) => s.settings.minCoveragePerShift);
   const schedules = useAppStore((s) => s.schedules);
   const upsertSchedule = useAppStore((s) => s.upsertSchedule);
   const updateRequest = useAppStore((s) => s.updateRequest);
@@ -64,7 +63,6 @@ export default function RequestFeedbackScreen() {
         team,
         exemptions,
         history,
-        minCoveragePerShift,
       });
       upsertSchedule({ ...schedule, shifts });
       updateRequest(request!.id, { status: 'approved', rebalance });
@@ -126,7 +124,7 @@ export default function RequestFeedbackScreen() {
                   { borderColor: impact.ok ? colors.green : colors.red, backgroundColor: impact.ok ? colors.greenBg : colors.redBg },
                 ]}>
                 <AppText variant="caption" style={{ color: impact.ok ? colors.greenText : colors.redText }}>
-                  {formatDateShort(impact.date)} · {SLOT_LABELS[impact.slot]}
+                  {formatDateShort(impact.date)} · {SLOT_LABELS[impact.slot]} · {ASSIGNMENT_ROLE_LABELS[impact.role]}
                 </AppText>
                 <AppText variant="captionBold" style={{ color: impact.ok ? colors.greenText : colors.redText }}>
                   {impact.ok ? `תקין ${impact.covered}/${impact.required}` : `⚠ ${impact.covered}/${impact.required}`}

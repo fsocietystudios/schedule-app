@@ -15,7 +15,6 @@ export interface GenerateScheduleInput {
   team: TeamMember[];
   exemptions: Exemption[];
   history: HistoryMonth[];
-  minCoveragePerShift: number;
   isDemo?: boolean;
 }
 
@@ -35,7 +34,6 @@ export interface EvaluateRequestInput {
   team: TeamMember[];
   exemptions: Exemption[];
   history: HistoryMonth[];
-  minCoveragePerShift: number;
 }
 
 export interface EvaluateRequestOutput {
@@ -48,7 +46,6 @@ export interface RebalanceInput {
   team: TeamMember[];
   exemptions: Exemption[];
   history: HistoryMonth[];
-  minCoveragePerShift: number;
 }
 
 export interface RebalanceOutput {

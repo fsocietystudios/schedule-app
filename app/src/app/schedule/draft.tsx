@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/Screen';
@@ -7,10 +7,13 @@ import { Button } from '@/components/Button';
 import { DraftBanner } from '@/components/DraftBanner';
 import { LoadBar } from '@/components/LoadBar';
 import { AiNote } from '@/components/AiNote';
+import { ShiftDayCard } from '@/components/ShiftDayCard';
 import { useAppStore } from '@/store/useAppStore';
 import { getAiEngine } from '@/ai';
 import { colors, spacing } from '@/theme';
-import { formatMonthLabel } from '@/utils/calendar';
+import { formatMonthLabel, isWeekend } from '@/utils/calendar';
+import { groupShiftsByDate, scheduleToHistoryMonth } from '@/utils/shift';
+import { Shift } from '@/types';
 
 export default function DraftScheduleScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -18,10 +21,15 @@ export default function DraftScheduleScreen() {
   const team = useAppStore((s) => s.team);
   const exemptions = useAppStore((s) => s.exemptions);
   const history = useAppStore((s) => s.history);
-  const minCoveragePerShift = useAppStore((s) => s.settings.minCoveragePerShift);
+  const schedules = useAppStore((s) => s.schedules);
   const upsertSchedule = useAppStore((s) => s.upsertSchedule);
   const removeSchedule = useAppStore((s) => s.removeSchedule);
   const [regenerating, setRegenerating] = useState(false);
+
+  const byDate = useMemo(
+    () => (schedule ? groupShiftsByDate(schedule.shifts) : new Map<string, { day?: Shift; night?: Shift }>()),
+    [schedule]
+  );
 
   if (!schedule) {
     return (
@@ -31,21 +39,27 @@ export default function DraftScheduleScreen() {
     );
   }
 
-  const maxCount = Math.max(1, ...schedule.fairness.map((f) => f.count));
+  const maxCount = Math.max(1, ...schedule.fairness.map((f) => f.counts.total));
   const maxGap =
     schedule.fairness.length > 1
-      ? Math.max(...schedule.fairness.map((f) => f.count)) - Math.min(...schedule.fairness.map((f) => f.count))
+      ? Math.max(...schedule.fairness.map((f) => f.counts.total)) -
+        Math.min(...schedule.fairness.map((f) => f.counts.total))
       : 0;
 
   async function handleRegenerate() {
     setRegenerating(true);
     try {
+      const combinedHistory = [
+        ...history,
+        ...schedules
+          .filter((sc) => sc.status === 'published' && sc.month !== schedule!.month)
+          .map((sc) => scheduleToHistoryMonth(sc, team)),
+      ];
       const output = await getAiEngine().generateSchedule({
         month: schedule!.month,
         team,
         exemptions,
-        history,
-        minCoveragePerShift,
+        history: combinedHistory,
       });
       upsertSchedule({ ...schedule!, shifts: output.shifts, fairness: output.fairness });
     } finally {
@@ -67,6 +81,24 @@ export default function DraftScheduleScreen() {
     <Screen scroll>
       <DraftBanner badge="טיוטה" text={`${formatMonthLabel(schedule.month)} · מוסתר מהצוות`} />
 
+      <AppText variant="display3">סידור משמרות</AppText>
+      <AppText variant="caption" style={styles.subtitle}>
+        יום: מנהל + עובד · לילה: 2 עובדים + כונן
+      </AppText>
+
+      <View style={styles.dayList}>
+        {[...byDate.entries()].map(([date, slots]) => (
+          <ShiftDayCard
+            key={date}
+            date={date}
+            day={slots.day}
+            night={slots.night}
+            team={team}
+            weekend={isWeekend(date)}
+          />
+        ))}
+      </View>
+
       <AppText variant="display3">איזון עומס</AppText>
       <AppText variant="caption" style={styles.subtitle}>
         משמרות לאדם · כולל היסטוריה
@@ -79,10 +111,10 @@ export default function DraftScheduleScreen() {
               {f.name}
             </AppText>
             <View style={styles.barWrap}>
-              <LoadBar pct={Math.round((f.count / maxCount) * 100)} />
+              <LoadBar pct={Math.round((f.counts.total / maxCount) * 100)} />
             </View>
             <AppText variant="captionBold" style={styles.fairnessCount}>
-              {f.count}
+              {f.counts.total}
             </AppText>
           </View>
         ))}
@@ -107,6 +139,7 @@ export default function DraftScheduleScreen() {
 
 const styles = StyleSheet.create({
   subtitle: { marginTop: 2, marginBottom: spacing.md },
+  dayList: { gap: spacing.sm, marginBottom: spacing.xl },
   fairnessList: { gap: spacing.sm, marginBottom: spacing.md },
   fairnessRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   fairnessName: { width: 64 },

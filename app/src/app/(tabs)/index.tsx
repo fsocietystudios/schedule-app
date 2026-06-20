@@ -6,9 +6,12 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { MonthCalendar } from '@/components/MonthCalendar';
 import { DraftBanner } from '@/components/DraftBanner';
+import { ShiftDayCard } from '@/components/ShiftDayCard';
 import { useAppStore } from '@/store/useAppStore';
 import { colors, radius, spacing } from '@/theme';
-import { currentMonthKey, formatMonthLabel, shiftMonth } from '@/utils/calendar';
+import { currentMonthKey, formatMonthLabel, isWeekend, shiftMonth } from '@/utils/calendar';
+import { groupShiftsByDate } from '@/utils/shift';
+import { Shift } from '@/types';
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'טיוטה',
@@ -27,6 +30,7 @@ export default function ScheduleHomeScreen() {
 
   const [viewedMonth, setViewedMonth] = useState(latest?.month ?? currentMonthKey());
   const viewedSchedule = realSchedules.find((s) => s.month === viewedMonth);
+  const team = useAppStore((s) => s.team);
 
   const targetMonth = latest ? shiftMonth(latest.month, 1) : currentMonthKey();
   const targetDraft = realSchedules.find((s) => s.month === targetMonth && s.status === 'draft');
@@ -34,11 +38,16 @@ export default function ScheduleHomeScreen() {
   const markedDates: Record<string, 'filled' | 'draft'> = {};
   if (viewedSchedule) {
     viewedSchedule.shifts.forEach((shift) => {
-      if (shift.memberIds.length > 0) {
+      if (shift.assignments.length > 0) {
         markedDates[shift.date] = viewedSchedule.status === 'published' ? 'filled' : 'draft';
       }
     });
   }
+
+  const byDate = useMemo(
+    () => (viewedSchedule ? groupShiftsByDate(viewedSchedule.shifts) : new Map<string, { day?: Shift; night?: Shift }>()),
+    [viewedSchedule]
+  );
 
   const pendingRequests = requests.filter((r) => r.status === 'pending').length;
   const hasPublished = realSchedules.some((s) => s.status === 'published');
@@ -72,7 +81,20 @@ export default function ScheduleHomeScreen() {
         <AppText variant="caption" style={styles.emptyMonth}>
           לא נוצר סידור לחודש זה.
         </AppText>
-      ) : null}
+      ) : (
+        <View style={styles.dayList}>
+          {[...byDate.entries()].map(([date, slots]) => (
+            <ShiftDayCard
+              key={date}
+              date={date}
+              day={slots.day}
+              night={slots.night}
+              team={team}
+              weekend={isWeekend(date)}
+            />
+          ))}
+        </View>
+      )}
 
       <View style={styles.actions}>
         {targetDraft ? (
@@ -124,5 +146,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   emptyMonth: { textAlign: 'center', marginTop: spacing.sm },
+  dayList: { gap: spacing.sm, marginTop: spacing.lg },
   actions: { gap: spacing.sm, marginTop: spacing.xl },
 });

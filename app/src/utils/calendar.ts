@@ -69,6 +69,17 @@ export function weekdayOf(date: string): number {
   return new Date(y, m - 1, d).getDay();
 }
 
+export function isWeekend(date: string): boolean {
+  const wd = weekdayOf(date);
+  return wd === 5 || wd === 6;
+}
+
+export function addDays(date: string, amount: number): string {
+  const [y, m, d] = date.split('-').map(Number);
+  const next = new Date(y, m - 1, d + amount);
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
+}
+
 export const HEBREW_MONTH_ABBR = [
   'ינו׳',
   'פבר׳',

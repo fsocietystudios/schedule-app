@@ -51,7 +51,6 @@ export const useAppStore = create<AppState>()(
         aiEngine: 'local',
         serverUrl: '',
         serverToken: '',
-        minCoveragePerShift: 1,
       },
       hasHydrated: false,
 

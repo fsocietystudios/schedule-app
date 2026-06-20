@@ -4,7 +4,6 @@ import { Screen } from '@/components/Screen';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { TextField } from '@/components/TextField';
-import { Stepper } from '@/components/Stepper';
 import { AppText } from '@/components/AppText';
 import { useAppStore } from '@/store/useAppStore';
 import { spacing } from '@/theme';
@@ -61,19 +60,6 @@ export default function SettingsScreen() {
           />
         </View>
       ) : null}
-
-      <View style={styles.field}>
-        <AppText variant="captionBold" style={styles.label}>
-          איוש מינימלי למשמרת
-        </AppText>
-        <Stepper
-          label="אנשים"
-          value={settings.minCoveragePerShift}
-          min={1}
-          max={10}
-          onChange={(minCoveragePerShift) => updateSettings({ minCoveragePerShift })}
-        />
-      </View>
     </Screen>
   );
 }

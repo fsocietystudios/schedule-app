@@ -2,14 +2,8 @@ import { applyRebalance, buildLoad } from '../scheduling.js';
 import { ollamaJson } from '../ollamaClient.js';
 
 export async function rebalanceHandler(req, res) {
-  const { request, schedule, team, exemptions, minCoveragePerShift } = req.body;
-  const { shifts, beforeCounts, afterCounts } = applyRebalance(
-    request,
-    schedule,
-    team,
-    exemptions,
-    minCoveragePerShift
-  );
+  const { request, schedule, team, exemptions } = req.body;
+  const { shifts, beforeCounts, afterCounts } = applyRebalance(request, schedule, team, exemptions);
   const load = buildLoad(team, beforeCounts, afterCounts);
 
   const values = Object.values(afterCounts);

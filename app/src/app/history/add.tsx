@@ -33,7 +33,9 @@ export default function AddHistoryMonthScreen() {
       totalShifts,
       peopleCount: team.length,
       source: 'imported',
-      perPersonCounts: counts,
+      perPersonCounts: Object.fromEntries(
+        Object.entries(counts).map(([id, total]) => [id, { total, night: 0, weekend: 0, onCall: 0 }])
+      ),
     });
     router.back();
   }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/Screen';
@@ -9,14 +9,25 @@ import { getAiEngine, GenerateScheduleOutput, GenerateStep } from '@/ai';
 import { generateId } from '@/utils/id';
 import { colors, radius, spacing } from '@/theme';
 import { formatMonthLabel } from '@/utils/calendar';
+import { scheduleToHistoryMonth } from '@/utils/shift';
 
 export default function GenerateScheduleScreen() {
   const { month } = useLocalSearchParams<{ month: string }>();
   const team = useAppStore((s) => s.team);
   const exemptions = useAppStore((s) => s.exemptions);
   const history = useAppStore((s) => s.history);
-  const minCoveragePerShift = useAppStore((s) => s.settings.minCoveragePerShift);
+  const schedules = useAppStore((s) => s.schedules);
   const upsertSchedule = useAppStore((s) => s.upsertSchedule);
+
+  const combinedHistory = useMemo(
+    () => [
+      ...history,
+      ...schedules
+        .filter((sc) => sc.status === 'published' && sc.month !== month)
+        .map((sc) => scheduleToHistoryMonth(sc, team)),
+    ],
+    [history, schedules, team, month]
+  );
 
   const [steps, setSteps] = useState<GenerateStep[]>([]);
   const [doneCount, setDoneCount] = useState(0);
@@ -32,8 +43,7 @@ export default function GenerateScheduleScreen() {
           month,
           team,
           exemptions,
-          history,
-          minCoveragePerShift,
+          history: combinedHistory,
         });
         if (cancelled.current) return;
         result = output;

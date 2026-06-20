@@ -21,20 +21,35 @@ export interface Exemption {
   daysOfWeek?: number[];
 }
 
-export type ShiftSlot = 'morning' | 'evening' | 'night';
+export type ShiftSlot = 'day' | 'night';
+
+export type AssignmentRole = 'manager' | 'employee' | 'on_call_manager';
+
+export interface ShiftAssignment {
+  memberId: string;
+  role: AssignmentRole;
+}
 
 export interface Shift {
   date: string;
   slot: ShiftSlot;
-  memberIds: string[];
+  assignments: ShiftAssignment[];
 }
 
 export type ScheduleStatus = 'draft' | 'published' | 'demo';
 
+export interface PersonCounts {
+  total: number;
+  night: number;
+  weekend: number;
+  onCall: number;
+}
+
 export interface FairnessEntry {
   memberId: string;
   name: string;
-  count: number;
+  role: Role;
+  counts: PersonCounts;
   pct: number;
 }
 
@@ -56,7 +71,7 @@ export interface HistoryMonth {
   totalShifts: number;
   peopleCount: number;
   source: 'imported' | 'generated';
-  perPersonCounts: Record<string, number>;
+  perPersonCounts: Record<string, PersonCounts>;
 }
 
 export type RequestType = 'absence' | 'swap';
@@ -66,6 +81,7 @@ export type RequestStatus = 'pending' | 'approved' | 'rejected';
 export interface ShiftImpact {
   date: string;
   slot: ShiftSlot;
+  role: AssignmentRole;
   covered: number;
   required: number;
   ok: boolean;
@@ -115,5 +131,4 @@ export interface AppSettings {
   aiEngine: AiEngineMode;
   serverUrl: string;
   serverToken: string;
-  minCoveragePerShift: number;
 }
