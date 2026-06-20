@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/Screen';
@@ -32,8 +33,12 @@ function exemptionSubtitle(e: Exemption): string {
 export default function ExemptionsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const member = useAppStore((s) => s.team.find((m) => m.id === id));
-  const exemptions = useAppStore((s) => s.exemptions.filter((e) => e.memberId === id));
+  const allExemptions = useAppStore((s) => s.exemptions);
   const removeExemption = useAppStore((s) => s.removeExemption);
+  const exemptions = useMemo(
+    () => allExemptions.filter((e) => e.memberId === id),
+    [allExemptions, id],
+  );
 
   if (!member) {
     return (
