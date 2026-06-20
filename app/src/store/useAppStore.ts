@@ -21,6 +21,7 @@ interface AppState {
   hasHydrated: boolean;
 
   addMember: (member: TeamMember) => void;
+  updateMember: (id: string, patch: Partial<TeamMember>) => void;
   removeMember: (id: string) => void;
 
   addExemption: (exemption: Exemption) => void;
@@ -55,6 +56,10 @@ export const useAppStore = create<AppState>()(
       hasHydrated: false,
 
       addMember: (member) => set((s) => ({ team: [...s.team, member] })),
+      updateMember: (id, patch) =>
+        set((s) => ({
+          team: s.team.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+        })),
       removeMember: (id) =>
         set((s) => ({
           team: s.team.filter((m) => m.id !== id),

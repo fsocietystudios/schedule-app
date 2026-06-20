@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/Screen';
@@ -35,10 +35,12 @@ export default function ExemptionsScreen() {
   const member = useAppStore((s) => s.team.find((m) => m.id === id));
   const allExemptions = useAppStore((s) => s.exemptions);
   const removeExemption = useAppStore((s) => s.removeExemption);
+  const removeMember = useAppStore((s) => s.removeMember);
   const exemptions = useMemo(
     () => allExemptions.filter((e) => e.memberId === id),
     [allExemptions, id],
   );
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   if (!member) {
     return (
@@ -50,11 +52,19 @@ export default function ExemptionsScreen() {
 
   return (
     <Screen scroll>
-      <Pressable onPress={() => router.back()} style={styles.back}>
-        <AppText variant="bodyMedium" style={{ color: colors.textMuted }}>
-          › צוות
-        </AppText>
-      </Pressable>
+      <View style={styles.topRow}>
+        <Pressable onPress={() => router.back()}>
+          <AppText variant="bodyMedium" style={{ color: colors.textMuted }}>
+            › צוות
+          </AppText>
+        </Pressable>
+        <Pressable
+          onPress={() => router.push({ pathname: '/team/[id]/edit', params: { id: member.id } })}>
+          <AppText variant="bodyMedium" style={{ color: colors.ink }}>
+            ✎ עריכה
+          </AppText>
+        </Pressable>
+      </View>
       <AppText variant="display3">שחרורים מהסידור</AppText>
       <AppText variant="caption" style={styles.subtitle}>
         {member.name} · {exemptions.length} פעילים
@@ -103,12 +113,50 @@ export default function ExemptionsScreen() {
         }
         style={styles.addButton}
       />
+
+      <View style={styles.dangerZone}>
+        {confirmingDelete ? (
+          <>
+            <AppText variant="caption" style={styles.dangerWarning}>
+              למחוק את {member.name} מהצוות? הפעולה תמחק גם את כל השחרורים שלו ולא ניתן לבטל אותה.
+            </AppText>
+            <View style={styles.dangerButtons}>
+              <Button
+                label="ביטול"
+                variant="outline"
+                onPress={() => setConfirmingDelete(false)}
+                style={styles.dangerButton}
+              />
+              <Button
+                label="אישור מחיקה"
+                variant="danger"
+                onPress={() => {
+                  removeMember(member.id);
+                  router.back();
+                }}
+                style={styles.dangerButton}
+              />
+            </View>
+          </>
+        ) : (
+          <Button
+            label="מחיקת איש צוות"
+            variant="danger"
+            onPress={() => setConfirmingDelete(true)}
+          />
+        )}
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  back: { marginBottom: spacing.xs },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
   subtitle: { marginBottom: spacing.lg, marginTop: 2 },
   list: { gap: spacing.sm },
   card: {
@@ -124,4 +172,8 @@ const styles = StyleSheet.create({
   removeBtn: { alignSelf: 'flex-start', marginTop: 4 },
   empty: { color: colors.textMuted, textAlign: 'center', marginTop: spacing.lg },
   addButton: { marginTop: spacing.xl },
+  dangerZone: { marginTop: spacing.xl, gap: spacing.sm },
+  dangerWarning: { color: colors.redText, textAlign: 'center' },
+  dangerButtons: { flexDirection: 'row', gap: spacing.sm },
+  dangerButton: { flex: 1 },
 });
