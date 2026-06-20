@@ -95,6 +95,14 @@ export const useAppStore = create<AppState>()(
     {
       name: 'shiftmind-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      version: 1,
+      migrate: (persistedState, version) => {
+        const state = persistedState as AppState;
+        if (version < 1) {
+          return { ...state, schedules: [], history: [], requests: [] };
+        }
+        return state;
+      },
       onRehydrateStorage: () => (state) => {
         if (state) state.hasHydrated = true;
       },
